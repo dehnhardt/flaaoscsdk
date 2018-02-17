@@ -31,6 +31,9 @@ public: //methods
 	OscHandler *handlerFor( Message *message);
 	OscHandler *handlerFor( std::string prefix);
 
+protected:
+	std::string m_sHandlerName;
+
 private: //members
 	std::string m_sPrefix;
 	std::map<std::string, OscHandler *> m_HandlerMap;

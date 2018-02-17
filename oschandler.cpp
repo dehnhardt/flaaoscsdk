@@ -1,7 +1,8 @@
 #include "oschandler.h"
 
 OscHandler::OscHandler( std::string prefix)
-	: m_sPrefix(prefix)
+	: m_sPrefix(prefix),
+	  m_sHandlerName("OscHandler")
 {
 
 }
@@ -13,9 +14,6 @@ OscHandler::~OscHandler()
 
 bool OscHandler::handle(UdpSocket *socket, Message *message)
 {
-	OscHandler *h = handlerFor(message->addressPattern());
-	if( h )
-		return h->handle(socket, message);
 	return false;
 }
 
@@ -61,7 +59,7 @@ OscHandler *OscHandler::handlerFor(std::string prefix)
 			if( handler )
 				return handler;
 			else
-				return this;
+				return handerlIt.second;
 		}
 	}
 	return 0;
