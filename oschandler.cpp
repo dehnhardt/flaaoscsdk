@@ -1,8 +1,8 @@
 #include "oschandler.h"
 
 OscHandler::OscHandler( std::string prefix)
-	: m_sPrefix(prefix),
-	  m_sHandlerName("OscHandler")
+	: m_sHandlerName("OscHandler"),
+	  m_sPrefix(prefix)
 {
 
 }
