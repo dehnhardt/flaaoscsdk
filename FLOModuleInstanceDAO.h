@@ -20,7 +20,7 @@ class FLOModuleInstanceDAO : public QObject
 	Q_OBJECT
 public:
 	explicit FLOModuleInstanceDAO(QObject *parent = nullptr);
-	explicit FLOModuleInstanceDAO(FLCRepositoryModule *module);
+	explicit FLOModuleInstanceDAO(flaarlib::MODULE_TYPE moduleType, flaarlib::DATA_TYPE dataType, QString functionalName, QString moduleTypeName);
 
 
 public: //methods

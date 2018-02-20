@@ -1,5 +1,4 @@
 #include "FLOModuleInstanceDAO.h"
-#include "../model/FLCRepositoryModule.h"
 #include "../flaaoscsdk/oscpkt.hh"
 
 #include <QDebug>
@@ -11,13 +10,13 @@ FLOModuleInstanceDAO::FLOModuleInstanceDAO(QObject *parent)
 
 }
 
-FLOModuleInstanceDAO::FLOModuleInstanceDAO(FLCRepositoryModule *module) :
+FLOModuleInstanceDAO::FLOModuleInstanceDAO(flaarlib::MODULE_TYPE moduleType, flaarlib::DATA_TYPE dataType, QString functionalName, QString moduleTypeName ) :
 	FLOModuleInstanceDAO()
 {
-	setModuleType(module->moduleType());
-	setDataType(module->dataType());
-	setModuleFunctionalName(module->functionalName().c_str());
-	setModuleTypeName(module->moduleTypeName().c_str());
+	setModuleType(moduleType);
+	setDataType(dataType);
+	setModuleFunctionalName(functionalName);
+	setModuleTypeName(moduleTypeName);
 }
 
 void FLOModuleInstanceDAO::serialize(oscpkt::Message *message)
