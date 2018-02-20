@@ -64,3 +64,12 @@ OscHandler *OscHandler::handlerFor(std::string prefix)
 	}
 	return 0;
 }
+
+std::string OscHandler::lastPathToken(std::string addressPattern)
+{
+	unsigned long index = addressPattern.rfind('/');
+	if( index < addressPattern.length() && index != std::string::npos )
+		++index;
+	return addressPattern.substr(index);
+
+}

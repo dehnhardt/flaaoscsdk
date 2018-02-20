@@ -31,8 +31,12 @@ public: //methods
 	OscHandler *handlerFor( Message *message);
 	OscHandler *handlerFor( std::string prefix);
 
-protected:
+protected: //methods
+	std::string lastPathToken( std::string addressPattern);
+
+protected: //members
 	std::string m_sHandlerName;
+
 
 private: //members
 	std::string m_sPrefix;
