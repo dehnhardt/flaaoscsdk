@@ -114,7 +114,7 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 					{
 						QStringRef name = attribute.name();
 						qDebug() << "\tAttribute Name: " << name;
-						if( name == "moduleDateTypeId")
+						if( name == "moduleDataTypeId")
 							setDataType(flaarlib::DATA_TYPE(attribute.value().toInt()));
 					}
 
