@@ -14,6 +14,8 @@ OscHandler::~OscHandler()
 
 bool OscHandler::handle(UdpSocket *socket, Message *message)
 {
+	Q_UNUSED(socket);
+	Q_UNUSED(message);
 	return false;
 }
 
