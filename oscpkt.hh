@@ -464,6 +464,14 @@ public:
 		strcpy(storage.getBytes(s.size()+1), s.c_str());
 		return *this;
 	}
+	Message &pushStr(const QString s)
+	{
+		assert(s.size() < 2147483647); // insane values are not welcome
+		type_tags += TYPE_TAG_STRING;
+		arguments.push_back(std::make_pair(storage.size(), s.size() + 1));
+		strcpy(storage.getBytes(static_cast<size_t>(s.size()+1)), s.toStdString().c_str());
+		return *this;
+	}
 	Message &pushBlob(void *ptr, size_t num_bytes)
 	{
 		assert(num_bytes < 2147483647); // insane values are not welcome
