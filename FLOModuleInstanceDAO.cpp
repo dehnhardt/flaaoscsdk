@@ -33,7 +33,7 @@ void FLOModuleInstanceDAO::serialize(oscpkt::Message *message)
 
 void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 {
-	std::string uuid;
+	QString uuid;
 	int moduleType;
 	int dataType;
 	int x;
@@ -44,6 +44,7 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 		m_moduleType = flaarlib::MODULE_TYPE(moduleType);
 		m_dataType = flaarlib::DATA_TYPE(dataType);
 		m_position = QPoint(x, y);
+		m_uuid = uuid;
 	}
 }
 
