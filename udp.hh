@@ -13,11 +13,11 @@
   freely, subject to the following restrictions:
 
   1. The origin of this software must not be misrepresented; you must not
-     claim that you wrote the original software. If you use this software
-     in a product, an acknowledgment in the product documentation would be
-     appreciated but is not required.
+	 claim that you wrote the original software. If you use this software
+	 in a product, an acknowledgment in the product documentation would be
+	 appreciated but is not required.
   2. Altered source versions must be plainly marked as such, and must not be
-     misrepresented as being the original software.
+	 misrepresented as being the original software.
   3. This notice may not be removed or altered from any source distribution.
 
   (this is the zlib license)
@@ -132,14 +132,14 @@ public:
 
 
 /**
-    just a wrapper over the classical socket stuff
+	just a wrapper over the classical socket stuff
 
-    should be robust, simple to use, IPv6 ready (avoids all deprecated
-    stuff such as gethostbyname etc), and portable (mac/linux/windows)
+	should be robust, simple to use, IPv6 ready (avoids all deprecated
+	stuff such as gethostbyname etc), and portable (mac/linux/windows)
 
-    Try to avoid sending packets larger than 8192 because some other
-    implementation may truncate them (python's DatagramRequestHandler
-    of OSC.py for example).
+	Try to avoid sending packets larger than 8192 because some other
+	implementation may truncate them (python's DatagramRequestHandler
+	of OSC.py for example).
 */
 struct UdpSocket
 {
@@ -393,11 +393,14 @@ private:
 		for (rp = result; rp && handle==-1; rp = rp->ai_next)
 		{
 
-
+			int trueflag = 1;
 			handle = socket(rp->ai_family, rp->ai_socktype,
 							rp->ai_protocol);
 			if (handle == -1)
 				continue;
+
+			setsockopt(handle, SOL_SOCKET, SO_BROADCAST,
+					   &trueflag, sizeof trueflag);
 
 			if (binding)
 			{
