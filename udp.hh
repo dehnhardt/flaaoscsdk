@@ -260,21 +260,20 @@ struct UdpSocket
 			tv.tv_sec=timeout_ms/1000;
 			tv.tv_usec=(timeout_ms%1000) * 1000;
 
-			//gettimeofday(&tv, 0); //tv.tv_usec += timeout_ms*1000;
-
 			fd_set readset;
 			FD_ZERO(&readset);
-			FD_SET(handle, &readset);
-			//int ret = select( handle+1, &readset, 0, 0, &tv );
+			FD_SET(handle,
+				   &readset);
+
 			int ret = select( handle+1, &readset, 0, 0, &tv );
 			if (ret <= 0)   // error, or timeout
 				return false;
 		}
 
 		/* now we should be able to read without blocking.. */
-		socklen_t len = (socklen_t)remote_addr.maxLen();
-		int nread = (int)recvfrom(handle, &buffer[0], (int)buffer.size(), 0,
-								  &remote_addr.addr(), &len);
+		socklen_t len = static_cast<socklen_t>(remote_addr.maxLen());
+		int nread = static_cast<int>(recvfrom(handle, &buffer[0], static_cast<size_t>(buffer.size()), 0,
+											  &remote_addr.addr(), &len));
 		if (nread < 0)
 		{
 			// maybe here we should differentiate EAGAIN/EINTR/EWOULDBLOCK from real errors
@@ -298,14 +297,14 @@ struct UdpSocket
 			if (!isOk()) close();
 			return false;
 		}
-		if (nread > (int)buffer.size())
+		if (nread > static_cast<int>(buffer.size()))
 		{
 			/* no luck... a large datagram arrived and we truncated it.. now it is too late */
 			buffer.clear();
 		}
 		else
 		{
-			buffer.resize(nread);
+			buffer.resize(static_cast<size_t>(nread));
 			std::vector<char> tmp(buffer);
 			tmp.swap(buffer);
 		}
@@ -332,10 +331,13 @@ struct UdpSocket
 		{
 			int res;
 			if (isBound())
-				res = sendto(handle, (const char *)ptr, (int)sz, 0, &addr.addr(), (int)addr.actualLen());
+				res = static_cast<int>(sendto(handle,
+											  static_cast<const char *>(ptr),
+											  sz, 0, &addr.addr(),
+											  static_cast<socklen_t>(addr.actualLen())));
 			else
 			{
-				res = send(handle, (const char *)ptr, (int)sz, 0);
+				res = static_cast<int>(send(handle, static_cast<const char *>(ptr), sz, 0));
 				//        res = write(handle, ptr, sz);
 			}
 #ifdef WIN32
@@ -349,7 +351,7 @@ struct UdpSocket
 		}
 		while (0);
 
-		return (size_t)sent == sz;
+		return static_cast<size_t>(sent) == sz;
 	}
 
 private:
@@ -404,11 +406,11 @@ private:
 
 			if (binding)
 			{
-				if (bind(handle, rp->ai_addr, (socklen_t)rp->ai_addrlen) != 0)
+				if (bind(handle, rp->ai_addr, static_cast<socklen_t>(rp->ai_addrlen)) != 0)
 					close();
 				else
 				{
-					socklen_t len = (socklen_t)local_addr.maxLen();
+					socklen_t len = static_cast<socklen_t>(local_addr.maxLen());
 					if (getsockname(handle, &local_addr.addr(), &len) == 0)
 					{
 						/* great */
@@ -418,11 +420,11 @@ private:
 			}
 			else
 			{
-				if (connect(handle, rp->ai_addr, (socklen_t)rp->ai_addrlen) != 0)
+				if (connect(handle, rp->ai_addr, static_cast<socklen_t>(rp->ai_addrlen)) != 0)
 					close();
 				else
 				{
-					assert((size_t)rp->ai_addrlen <= sizeof remote_addr);
+					assert(static_cast<size_t>(rp->ai_addrlen) <= sizeof remote_addr);
 					memcpy(&remote_addr.addr(), rp->ai_addr, rp->ai_addrlen);
 					break;
 				}
