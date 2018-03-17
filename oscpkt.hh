@@ -239,6 +239,7 @@ typedef enum { OK_NO_ERROR=0,
 class Message
 {
 	TimeTag time_tag;
+	std::string origin;
 	std::string address;
 	std::string type_tags;
 	std::vector<std::pair<size_t, size_t> > arguments; // array of pairs (pos,size), pos being an index into the 'storage' array.
@@ -363,11 +364,12 @@ public:
 
 	Message() { clear(); }
 	Message(const std::string &s, TimeTag tt = TimeTag::immediate()) : time_tag(tt), address(s), err(OK_NO_ERROR) {}
-	Message(const void *ptr, size_t sz, TimeTag tt = TimeTag::immediate()) { buildFromRawData(ptr, sz); time_tag = tt; }
+	Message(const std::string &origin, const void *ptr, size_t sz, TimeTag tt = TimeTag::immediate()) : origin(origin) { buildFromRawData(ptr, sz); time_tag = tt; }
 
 	bool isOk() const { return err == OK_NO_ERROR; }
 	ErrorCode getErr() const { return err; }
-
+	/** return the host which send the message */
+	std::string getOrigin( ) {return origin;}
 	/** return the type_tags string, with its initial ',' stripped. */
 	const std::string &typeTags() const { return type_tags; }
 	/** retrieve the address pattern. If you want to follow to the whole OSC spec, you
@@ -646,14 +648,17 @@ class PacketReader
 public:
 	PacketReader() { err = OK_NO_ERROR; }
 	/** pointer and size of the osc packet to be parsed. */
-	PacketReader(const void *ptr, size_t sz) { init(ptr, sz); }
+	PacketReader(const void *ptr, size_t sz) { init("", ptr, sz); }
+	/** pointer and size of the osc packet to be parsed. */
+	PacketReader(std::string origin, const void *ptr, size_t sz) { init(origin, ptr, sz); }
 
-	void init(const void *ptr, size_t sz)
+	void init(std::string origin, const void *ptr, size_t sz)
 	{
 		err = OK_NO_ERROR;
+		this->origin = origin;
 		messages.clear();
 		if ((sz%4) == 0)
-			parse((const char *)ptr, (const char *)ptr+sz, TimeTag::immediate());
+			parse(static_cast<const char *>(ptr), (const char *)ptr+sz, TimeTag::immediate());
 		else OSCPKT_SET_ERR(INVALID_PACKET_SIZE);
 		it_messages = messages.begin();
 	}
@@ -671,6 +676,7 @@ private:
 	std::list<Message> messages;
 	std::list<Message>::iterator it_messages;
 	ErrorCode err;
+	std::string origin;
 
 	void parse(const char *beg, const char *end, TimeTag time_tag)
 	{
@@ -705,7 +711,7 @@ private:
 		}
 		else
 		{
-			messages.push_back(Message(beg, end-beg, time_tag));
+			messages.push_back(Message(origin, beg, end-beg, time_tag));
 			if (!messages.back().isOk()) OSCPKT_SET_ERR(messages.back().getErr());
 		}
 	}

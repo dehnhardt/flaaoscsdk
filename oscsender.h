@@ -21,7 +21,7 @@ public:
 	virtual ~OscSender();
 	void start();
 
-	void enqueuMessage(Message message);
+	void enqueuMessage(Message message, bool multicast = true);
 	void sendQueuedMessages();
 	void sendPackage( PacketWriter pw);
 

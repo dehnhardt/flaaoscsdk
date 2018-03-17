@@ -44,15 +44,16 @@ void OscSender::init()
 		qDebug() << "Socket ready, sending to host " << m_sHost.c_str() << " on port " << m_iPortNum;
 	else
 		cerr << "Socket not ready:" << m_pUdpSocket->errorMessage().c_str() << " (host " << m_sHost.c_str() << ", port " << m_iPortNum << ")";
-
 }
 
-void OscSender::enqueuMessage(Message message)
+void OscSender::enqueuMessage(Message message, bool multicast __attribute__((unused)) )
 {
 	if( m_pMessageQueue )
+	{
 		m_pMessageQueue->enqueue(message);
-	if( ! m_bRunning )
-		sendQueuedMessages();
+		if( ! m_bRunning )
+			sendQueuedMessages();
+	}
 }
 
 void OscSender::sendQueuedMessages()

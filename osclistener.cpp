@@ -52,7 +52,9 @@ void OscListener::runListener()
 		{
 			if (m_pUdpSocket->receiveNextPacket(30))
 			{
-				pr.init(m_pUdpSocket->packetData(), m_pUdpSocket->packetSize());
+				SockAddr addr = m_pUdpSocket->remote_addr;
+				qDebug("Recieve from host %s", addr.asString().c_str());
+				pr.init(m_pUdpSocket->remote_addr.getHost(), m_pUdpSocket->packetData(), m_pUdpSocket->packetSize());
 				oscpkt::Message *message;
 				while (pr.isOk() && (message = pr.popMessage()) != 0)
 				{

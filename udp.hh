@@ -89,6 +89,19 @@ public:
 		return (err == 0 ? atoi(servname) : -1);
 	}
 	/* convert to a string representation (ip:port) */
+	std::string getHost() const
+	{
+		if (addr().sa_family)
+		{
+			char hostname[512], servname[512];
+			int err = getnameinfo(&addr_.sa,
+								  sizeof addr_, hostname, sizeof hostname, servname, sizeof servname, NI_NUMERICHOST|NI_NUMERICSERV);
+			if (err == 0)
+				return hostname;
+		}
+		return "";
+	}
+	/* convert to a string representation (ip:port) */
 	std::string asString() const
 	{
 		std::string s;
