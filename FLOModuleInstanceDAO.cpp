@@ -151,8 +151,8 @@ void FLOModuleInstanceDAO::serializeParameter(QXmlStreamWriter *xmlWriter, FLOPa
 		parameter = new FLOParameter();
 	xmlWriter->writeStartElement("FLOParameter");
 	xmlWriter->writeAttribute("parameterName", parameter->parameterName());
-	xmlWriter->writeAttribute("parameterType", QString(parameter->parameterType()));
-	xmlWriter->writeAttribute("editable", QString(parameter->editable()));
+	xmlWriter->writeAttribute("parameterType", QString::number(parameter->parameterType()));
+	xmlWriter->writeAttribute("editable", QString::number(parameter->editable()));
 	xmlWriter->writeStartElement("Value");
 	if( parameter->parameterType() == FLOParameter::BYTES)
 		xmlWriter->writeCDATA(parameter->value().toString());
