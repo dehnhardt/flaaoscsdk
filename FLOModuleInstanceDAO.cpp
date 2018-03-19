@@ -292,40 +292,43 @@ void FLOModuleInstanceDAO::deserializeParameter(QXmlStreamReader *xmlReader)
 			case QXmlStreamReader::TokenType::EndElement:
 				s = xmlReader->name();
 				if( s == "Value")
+				{
 					switch(p->parameterType())
 					{
 						case FLOParameter::BYTES:
 							break;
 						case FLOParameter::BOOLEAN:
-							p->setValue(QVariant(text).convert(QVariant::Bool));
+							p->setValue(QVariant(text.toInt()).convert(QVariant::Bool));
 							break;
 						case FLOParameter::STRING:
 							p->setValue(QVariant(text));
 							break;
 						case FLOParameter::INTEGER:
-							p->setValue(QVariant(text).convert(QVariant::Int));
+							p->setValue(QVariant(text.toInt()));
 							break;
 						case FLOParameter::LONG:
-							p->setValue(QVariant(text).convert(QVariant::LongLong));
+							p->setValue(QVariant(text.toLongLong()));
 							break;
 					}
-				setModuleTypeName( text.trimmed());
+				}
 				if( s == "FLOParameter")
+				{
+					if( p->parameterName() == "inputs")
+						inputs = p;
+					else if( p->parameterName() == "inputChannels")
+						inputChannels = p;
+					else if( p->parameterName() == "outputs")
+						outputs = p;
+					else if( p->parameterName() == "outputChannels")
+						outputChannels = p;
 					return;
+				}
 				break;
 			default:
 				break;
 		}
 		t = xmlReader->readNext();
 	}
-	if( p->parameterName() == "inputs")
-		inputs = p;
-	else if( p->parameterName() == "inputChannels")
-		inputChannels = p;
-	else if( p->parameterName() == "outputs")
-		outputs = p;
-	else if( p->parameterName() == "outputChannels")
-		outputChannels = p;
 }
 
 /*

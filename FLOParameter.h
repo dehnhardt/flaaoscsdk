@@ -51,7 +51,7 @@ public: //getter
 public: //setter
 	void setParameterName(const QString &parameterName)
 	{
-		m_vValue = parameterName;
+		m_sParameterName = parameterName;
 	}
 	void setEditable(bool editable)
 	{
