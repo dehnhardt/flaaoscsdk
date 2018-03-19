@@ -6,7 +6,11 @@
 
 FLOModuleInstanceDAO::FLOModuleInstanceDAO(QObject *parent)
 	: QObject(parent),
-	  m_uuid(QUuid::createUuid())
+	  m_uuid(QUuid::createUuid()),
+	  inputs(new FLOParameter("inputs", 1, FLOParameter::INTEGER, true)),
+	  inputChannels(new FLOParameter("inputChannels", 2, FLOParameter::INTEGER, true)),
+	  outputs(new FLOParameter("outputs", 1, FLOParameter::INTEGER, true)),
+	  outputChannels(new FLOParameter("outputChannels", 2, FLOParameter::INTEGER, true))
 {
 
 }
@@ -61,11 +65,11 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	int x;
 	int y;
 	oscpkt::Message::ArgReader &argReader = message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
-											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y);
-	deserializeParameter(argReader, inputs);
-	deserializeParameter(argReader, inputChannels);
-	deserializeParameter(argReader, outputs);
-	deserializeParameter(argReader, outputChannels);
+											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).popStr(m_sGroup);
+	argReader = deserializeParameter(argReader, inputs);
+	argReader = deserializeParameter(argReader, inputChannels);
+	argReader = deserializeParameter(argReader, outputs);
+	argReader = deserializeParameter(argReader, outputChannels);
 	if( argReader.isOk() )
 	{
 		m_moduleType = flaarlib::MODULE_TYPE(moduleType);
