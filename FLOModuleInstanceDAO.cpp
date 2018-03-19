@@ -2,6 +2,7 @@
 #include "../flaaoscsdk/oscpkt.hh"
 
 #include <QDebug>
+#include <vector>
 
 FLOModuleInstanceDAO::FLOModuleInstanceDAO(QObject *parent)
 	: QObject(parent),
@@ -29,6 +30,27 @@ void FLOModuleInstanceDAO::serialize(oscpkt::Message *message)
 	message->pushInt32(dataType());
 	message->pushInt32(position().x());
 	message->pushInt32(position().y());
+	message->pushStr(m_sGroup);
+	serializeParameter(message, inputs);
+	serializeParameter(message, inputChannels);
+	serializeParameter(message, outputs);
+	serializeParameter(message, outputChannels);
+}
+
+void FLOModuleInstanceDAO::serializeParameter(oscpkt::Message *message, FLOParameter *parameter)
+{
+	if( !parameter )
+		parameter = new FLOParameter();
+	message->pushStr(parameter->parameterName());
+	message->pushInt32(parameter->parameterType());
+	message->pushBool(parameter->editable());
+	if( parameter->parameterType() == FLOParameter::BYTES)
+	{
+		QByteArray a = parameter->value().toByteArray();
+		message->pushBlob(a.data_ptr(),static_cast<unsigned long>(a.size()));
+	}
+	else
+		message->pushStr(parameter->value().toString());
 }
 
 void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
@@ -38,8 +60,13 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	int dataType;
 	int x;
 	int y;
-	if(message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
-			.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).isOk() )
+	oscpkt::Message::ArgReader &argReader = message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
+											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y);
+	deserializeParameter(argReader, inputs);
+	deserializeParameter(argReader, inputChannels);
+	deserializeParameter(argReader, outputs);
+	deserializeParameter(argReader, outputChannels);
+	if( argReader.isOk() )
 	{
 		m_moduleType = flaarlib::MODULE_TYPE(moduleType);
 		m_dataType = flaarlib::DATA_TYPE(dataType);
@@ -48,12 +75,54 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	}
 }
 
+oscpkt::Message::ArgReader &FLOModuleInstanceDAO::deserializeParameter(oscpkt::Message::ArgReader &reader, FLOParameter *parameter)
+{
+	QString parameterName;
+	int type;
+	FLOParameter::FLO_PARAMETER_TYPE pType;
+	bool editable;
+	std::vector<char> bValue;
+	QString sValue;
+	parameter = new FLOParameter();
+	reader = reader.popStr(parameterName).popInt32(type).popBool(editable);
+	pType = FLOParameter::FLO_PARAMETER_TYPE(type);
+	if( pType == FLOParameter::BYTES )
+	{
+		reader = reader.popBlob(bValue);
+		QByteArray b(bValue.data());
+		parameter->setValue(QVariant(b));
+	}
+	else
+	{
+		reader = reader.popStr(sValue);
+		switch( pType )
+		{
+			case FLOParameter::BYTES:
+				break;
+			case FLOParameter::BOOLEAN:
+				parameter->setValue(QVariant(sValue).convert(QVariant::Bool));
+				break;
+			case FLOParameter::STRING:
+				parameter->setValue(QVariant(sValue));
+				break;
+			case FLOParameter::INTEGER:
+				parameter->setValue(QVariant(sValue).convert(QVariant::Int));
+				break;
+			case FLOParameter::LONG:
+				parameter->setValue(QVariant(sValue).convert(QVariant::LongLong));
+				break;
+		}
+	}
+	return reader;
+}
+
 void FLOModuleInstanceDAO::serialize( QXmlStreamWriter *xmlWriter )
 {
 	xmlWriter->writeStartElement("Module");
 	xmlWriter->writeAttribute("functionalName", moduleFunctionalName());
 	xmlWriter->writeAttribute("uuid", uuid().toString());
 	xmlWriter->writeAttribute("name", moduleName());
+	xmlWriter->writeAttribute("moduleGroup", group());
 	xmlWriter->writeStartElement("ModuleType");
 	xmlWriter->writeAttribute("moduleTypeId", QString::number(static_cast<int>(moduleType())));
 	xmlWriter->writeCharacters(moduleTypeName());
@@ -64,6 +133,27 @@ void FLOModuleInstanceDAO::serialize( QXmlStreamWriter *xmlWriter )
 	xmlWriter->writeStartElement("DisplayPosition");
 	xmlWriter->writeAttribute("x", QString::number(position().x()));
 	xmlWriter->writeAttribute("y", QString::number(position().y()));
+	xmlWriter->writeEndElement();
+	serializeParameter(xmlWriter, inputs);
+	serializeParameter(xmlWriter, inputChannels);
+	serializeParameter(xmlWriter, outputs);
+	serializeParameter(xmlWriter, outputChannels);
+	xmlWriter->writeEndElement();
+}
+
+void FLOModuleInstanceDAO::serializeParameter(QXmlStreamWriter *xmlWriter, FLOParameter *parameter)
+{
+	if(!parameter)
+		parameter = new FLOParameter();
+	xmlWriter->writeStartElement("FLOParameter");
+	xmlWriter->writeAttribute("parameterName", parameter->parameterName());
+	xmlWriter->writeAttribute("parameterType", QString(parameter->parameterType()));
+	xmlWriter->writeAttribute("editable", QString(parameter->editable()));
+	xmlWriter->writeStartElement("Value");
+	if( parameter->parameterType() == FLOParameter::BYTES)
+		xmlWriter->writeCDATA(parameter->value().toString());
+	else
+		xmlWriter->writeCharacters(parameter->value().toString());
 	xmlWriter->writeEndElement();
 	xmlWriter->writeEndElement();
 }
@@ -93,6 +183,8 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 							setUuid(attribute.value().toString());
 						if( name == "name")
 							setModuleName(attribute.value().toString());
+						if( name == "moduleGroup")
+							setGroup(attribute.value().toString());
 						qDebug() << "\tAttribute Name: " << name << ", value: " << attribute.value();
 					}
 				}
@@ -135,12 +227,12 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 					}
 					setPosition(p);
 				}
+				if( s == "FLOParameter" )
+					deserializeParameter(xmlReader);
 				break;
 			case QXmlStreamReader::TokenType::Characters:
 				{
 					text += xmlReader->text().toString();
-					if( s == "ModuleType")
-						qDebug() << text;
 					break;
 				}
 			case QXmlStreamReader::TokenType::EndElement:
@@ -154,6 +246,78 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 		}
 		t = xmlReader->readNext();
 	}
+}
+
+void FLOModuleInstanceDAO::deserializeParameter(QXmlStreamReader *xmlReader)
+{
+	QXmlStreamReader::TokenType t = xmlReader->tokenType();
+	QStringRef s = xmlReader->name();
+	QString text;
+	FLOParameter *p = new FLOParameter();
+	while(!xmlReader->atEnd())
+	{
+		switch( t )
+		{
+			case QXmlStreamReader::TokenType::StartElement:
+				if( s == "FLOParameter" )
+				{
+					QXmlStreamAttributes attributes = xmlReader->attributes();
+					for( auto attribute : attributes )
+					{
+						QStringRef name = attribute.name();
+						qDebug() << "\tAttribute Name: " << name;
+						if( name == "parameterName")
+							p->setParameterName(attribute.value().toString());
+						if( name == "parameterType")
+							p->setParameterType(FLOParameter::FLO_PARAMETER_TYPE(attribute.value().toInt()));
+						if( name == "editable")
+							p->setEditable(attribute.value().toInt());
+					}
+				}
+				if( s == "Value" )
+				{
+
+				}
+				break;
+			case QXmlStreamReader::TokenType::Characters:
+				{
+					text += xmlReader->text().toString();
+					break;
+				}
+			case QXmlStreamReader::TokenType::EndElement:
+				s = xmlReader->name();
+				if( s == "Value")
+					switch(p->parameterType())
+					{
+						case FLOParameter::BYTES:
+							break;
+						case FLOParameter::BOOLEAN:
+							p->setValue(QVariant(text).convert(QVariant::Bool));
+							break;
+						case FLOParameter::STRING:
+							p->setValue(QVariant(text));
+							break;
+						case FLOParameter::INTEGER:
+							p->setValue(QVariant(text).convert(QVariant::Int));
+							break;
+						case FLOParameter::LONG:
+							p->setValue(QVariant(text).convert(QVariant::LongLong));
+							break;
+					}
+				setModuleTypeName( text.trimmed());
+				if( s == "FLOParameter")
+					return;
+		}
+		t = xmlReader->readNext();
+	}
+	if( p->parameterName() == "inputs")
+		inputs = p;
+	else if( p->parameterName() == "inputChannels")
+		inputChannels = p;
+	else if( p->parameterName() == "outputs")
+		outputs = p;
+	else if( p->parameterName() == "outputChannels")
+		outputChannels = p;
 }
 
 /*
@@ -198,6 +362,11 @@ QPoint FLOModuleInstanceDAO::position()
 flaarlib::DATA_TYPE FLOModuleInstanceDAO::dataType() const
 {
 	return m_dataType;
+}
+
+QString FLOModuleInstanceDAO::group() const
+{
+	return m_sGroup;
 }
 
 /*
@@ -248,4 +417,9 @@ void FLOModuleInstanceDAO::setPosition(const int x, const int y)
 void FLOModuleInstanceDAO::setModuleFunctionalName(const QString &sModuleFunctionalName)
 {
 	m_sModuleFunctionalName = sModuleFunctionalName;
+}
+
+void FLOModuleInstanceDAO::setGroup(const QString &group)
+{
+	m_sGroup = group;
 }

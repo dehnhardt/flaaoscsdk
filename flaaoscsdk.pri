@@ -10,4 +10,5 @@ HEADERS += \
     src/flaaoscsdk/oscpkt.hh \
     src/flaaoscsdk/oscsender.h \
     src/flaaoscsdk/udp.hh \
-    src/flaaoscsdk/FLOModuleInstanceDAO.h
+    src/flaaoscsdk/FLOModuleInstanceDAO.h \
+    $$PWD/FLOParameter.h
