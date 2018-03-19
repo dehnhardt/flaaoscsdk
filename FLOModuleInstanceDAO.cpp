@@ -245,6 +245,7 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 					setModuleTypeName( text.trimmed());
 				if( s == "Module")
 					return;
+				break;
 			default:
 				break;
 		}
@@ -311,6 +312,9 @@ void FLOModuleInstanceDAO::deserializeParameter(QXmlStreamReader *xmlReader)
 				setModuleTypeName( text.trimmed());
 				if( s == "FLOParameter")
 					return;
+				break;
+			default:
+				break;
 		}
 		t = xmlReader->readNext();
 	}
