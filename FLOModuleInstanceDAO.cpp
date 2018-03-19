@@ -6,11 +6,7 @@
 
 FLOModuleInstanceDAO::FLOModuleInstanceDAO(QObject *parent)
 	: QObject(parent),
-	  m_uuid(QUuid::createUuid()),
-	  inputs(new FLOParameter("inputs", 1, FLOParameter::INTEGER, true)),
-	  inputChannels(new FLOParameter("inputChannels", 2, FLOParameter::INTEGER, true)),
-	  outputs(new FLOParameter("outputs", 1, FLOParameter::INTEGER, true)),
-	  outputChannels(new FLOParameter("outputChannels", 2, FLOParameter::INTEGER, true))
+	  m_uuid(QUuid::createUuid())
 {
 
 }
@@ -35,10 +31,9 @@ void FLOModuleInstanceDAO::serialize(oscpkt::Message *message)
 	message->pushInt32(position().x());
 	message->pushInt32(position().y());
 	message->pushStr(m_sGroup);
-	serializeParameter(message, inputs);
-	serializeParameter(message, inputChannels);
-	serializeParameter(message, outputs);
-	serializeParameter(message, outputChannels);
+	message->pushInt32(moduleParameters.size());
+	for( auto parameter :moduleParameters )
+		serializeParameter(message, parameter);
 }
 
 void FLOModuleInstanceDAO::serializeParameter(oscpkt::Message *message, FLOParameter *parameter)
@@ -64,12 +59,15 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	int dataType;
 	int x;
 	int y;
+	int parameterCount;
 	oscpkt::Message::ArgReader &argReader = message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
-											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).popStr(m_sGroup);
-	argReader = deserializeParameter(argReader, inputs);
-	argReader = deserializeParameter(argReader, inputChannels);
-	argReader = deserializeParameter(argReader, outputs);
-	argReader = deserializeParameter(argReader, outputChannels);
+											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).popStr(m_sGroup).popInt32(parameterCount);
+	for( int i = 0; i < parameterCount; ++i)
+	{
+		FLOParameter *p = 0;
+		argReader = deserializeParameter(argReader, p);
+		moduleParameters[p->parameterName()] = p;
+	}
 	if( argReader.isOk() )
 	{
 		m_moduleType = flaarlib::MODULE_TYPE(moduleType);
@@ -138,10 +136,11 @@ void FLOModuleInstanceDAO::serialize( QXmlStreamWriter *xmlWriter )
 	xmlWriter->writeAttribute("x", QString::number(position().x()));
 	xmlWriter->writeAttribute("y", QString::number(position().y()));
 	xmlWriter->writeEndElement();
-	serializeParameter(xmlWriter, inputs);
-	serializeParameter(xmlWriter, inputChannels);
-	serializeParameter(xmlWriter, outputs);
-	serializeParameter(xmlWriter, outputChannels);
+	xmlWriter->writeStartElement("ModuleParameters");
+	xmlWriter->writeAttribute("count", QString::number(moduleParameters.size()));
+	for( auto parameter : moduleParameters )
+		serializeParameter(xmlWriter, parameter);
+	xmlWriter->writeEndElement();
 	xmlWriter->writeEndElement();
 }
 
@@ -313,14 +312,7 @@ void FLOModuleInstanceDAO::deserializeParameter(QXmlStreamReader *xmlReader)
 				}
 				if( s == "FLOParameter")
 				{
-					if( p->parameterName() == "inputs")
-						inputs = p;
-					else if( p->parameterName() == "inputChannels")
-						inputChannels = p;
-					else if( p->parameterName() == "outputs")
-						outputs = p;
-					else if( p->parameterName() == "outputChannels")
-						outputChannels = p;
+					moduleParameters[p->parameterName()] = p;
 					return;
 				}
 				break;
@@ -380,6 +372,11 @@ QString FLOModuleInstanceDAO::group() const
 	return m_sGroup;
 }
 
+FLOParameter *FLOModuleInstanceDAO::getParameter(QString parameterName)
+{
+	return moduleParameters[parameterName];
+}
+
 /*
  * setter
  */
@@ -433,4 +430,56 @@ void FLOModuleInstanceDAO::setModuleFunctionalName(const QString &sModuleFunctio
 void FLOModuleInstanceDAO::setGroup(const QString &group)
 {
 	m_sGroup = group;
+}
+
+void FLOModuleInstanceDAO::setInputPorts(int inputPorts)
+{
+	FLOParameter *p = moduleParameters.find("inputPorts").value();
+	if( p && (inputPorts == -1) )
+		moduleParameters.remove("inputPorts");
+	else if( !p  )
+	{
+		p = new FLOParameter("inputPorts", inputPorts, FLOParameter::INTEGER, false);
+		moduleParameters["inputPorts"] = p;
+	}
+	p->setValue(inputPorts);
+}
+
+void FLOModuleInstanceDAO::setInputChannels(int inputChannels)
+{
+	FLOParameter *p = moduleParameters.find("inputChannels").value();
+	if( p && (inputChannels == -1) )
+		moduleParameters.remove("inputChannels");
+	else if( !p  )
+	{
+		p = new FLOParameter("inputChannels", inputChannels, FLOParameter::INTEGER, false);
+		moduleParameters["inputChannels"] = p;
+	}
+	p->setValue(inputChannels);
+}
+
+void FLOModuleInstanceDAO::setOutputPorts(int outputPorts)
+{
+	FLOParameter *p = moduleParameters.find("outputPorts").value();
+	if( p && (outputPorts == -1) )
+		moduleParameters.remove("outputPorts");
+	else if( !p  )
+	{
+		p = new FLOParameter("outputPorts", outputPorts, FLOParameter::INTEGER, false);
+		moduleParameters["outputPorts"] = p;
+	}
+	p->setValue(outputPorts);
+}
+
+void FLOModuleInstanceDAO::setOutputChannels(int outputChannels)
+{
+	FLOParameter *p = moduleParameters.find("outputChannels").value();
+	if( p && (outputChannels == -1) )
+		moduleParameters.remove("outputChannels");
+	else if( !p  )
+	{
+		p = new FLOParameter("outputChannels", outputChannels, FLOParameter::INTEGER, false);
+		moduleParameters["outputChannels"] = p;
+	}
+	p->setValue(outputChannels);
 }
