@@ -2,7 +2,8 @@ SOURCES += \
     src/flaaoscsdk/oschandler.cpp \
     src/flaaoscsdk/osclistener.cpp \
     src/flaaoscsdk/oscsender.cpp \
-    src/flaaoscsdk/FLOModuleInstanceDAO.cpp
+    src/flaaoscsdk/FLOModuleInstanceDAO.cpp \
+    $$PWD/FLOParameter.cpp
 
 HEADERS += \
     src/flaaoscsdk/oschandler.h \

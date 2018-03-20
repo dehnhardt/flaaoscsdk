@@ -28,19 +28,15 @@ public:
 public:
 	//methods serialize to message
 	void serialize(oscpkt::Message *message);
-	void serializeParameter(oscpkt::Message *message, FLOParameter *parameter);
 
 	//methods serialize to xml
 	void serialize(QXmlStreamWriter *xmlWriter);
-	void serializeParameter(QXmlStreamWriter *xmlWriter, FLOParameter *parameter);
 
 	//methods deserialize from message
 	void deserialize(oscpkt::Message *message);
-	oscpkt::Message::ArgReader &deserializeParameter(oscpkt::Message::ArgReader &message, FLOParameter *parameter);
 
 	//methods deserialize from xml
 	void deserialize(QXmlStreamReader *xmlReader);
-	void deserializeParameter(QXmlStreamReader *xmlReader);
 
 public: //getter
 
@@ -54,6 +50,8 @@ public: //getter
 	QString moduleFunctionalName() const;
 	QString group() const;
 	FLOParameter *getParameter(QString parameterName);
+	FLOParameter *getParameterAt(int position);
+	int getParameterCount();
 
 public: //setter
 

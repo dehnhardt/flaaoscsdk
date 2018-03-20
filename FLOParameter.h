@@ -1,6 +1,10 @@
 #ifndef FLOPARAMETER_H
 #define FLOPARAMETER_H
 
+#include "oscpkt.hh"
+
+#include <QXmlStreamWriter>
+#include <QXmlStreamReader>
 #include <QString>
 #include <QVariant>
 
@@ -29,6 +33,19 @@ public:
 		m_vValue(value)
 	{}
 	~FLOParameter() {}
+
+	//methods serialize to message
+	void serialize(oscpkt::Message *message);
+
+	//methods serialize to xml
+	void serialize(QXmlStreamWriter *xmlWriter);
+
+	//methods deserialize from message
+	void deserialize(oscpkt::Message::ArgReader &message);
+
+	//methods deserialize from xml
+	void deserialize(QXmlStreamReader *xmlReader);
+
 
 public: //getter
 	QString parameterName() const

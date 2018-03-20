@@ -33,23 +33,7 @@ void FLOModuleInstanceDAO::serialize(oscpkt::Message *message)
 	message->pushStr(m_sGroup);
 	message->pushInt32(moduleParameters.size());
 	for( auto parameter :moduleParameters )
-		serializeParameter(message, parameter);
-}
-
-void FLOModuleInstanceDAO::serializeParameter(oscpkt::Message *message, FLOParameter *parameter)
-{
-	if( !parameter )
-		parameter = new FLOParameter();
-	message->pushStr(parameter->parameterName());
-	message->pushInt32(parameter->parameterType());
-	message->pushBool(parameter->editable());
-	if( parameter->parameterType() == FLOParameter::BYTES)
-	{
-		QByteArray a = parameter->value().toByteArray();
-		message->pushBlob(a.data_ptr(),static_cast<unsigned long>(a.size()));
-	}
-	else
-		message->pushStr(parameter->value().toString());
+		parameter->serialize(message);
 }
 
 void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
@@ -60,12 +44,12 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	int x;
 	int y;
 	int parameterCount;
-	oscpkt::Message::ArgReader &argReader = message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
-											.popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).popStr(m_sGroup).popInt32(parameterCount);
-	for( int i = 0; i < parameterCount; ++i)
+	oscpkt::Message::ArgReader argReader = message->arg().popStr(uuid).popStr(m_sModuleFunctionalName).popStr(m_sModuleName)
+										   .popInt32(moduleType).popStr(m_sModuleTypeName).popInt32(dataType).popInt32(x).popInt32(y).popStr(m_sGroup).popInt32(parameterCount);
+	for( int i = 0; i < parameterCount; i++)
 	{
-		FLOParameter *p = 0;
-		argReader = deserializeParameter(argReader, p);
+		FLOParameter *p = new FLOParameter();
+		p->deserialize(argReader);
 		moduleParameters[p->parameterName()] = p;
 	}
 	if( argReader.isOk() )
@@ -77,46 +61,6 @@ void FLOModuleInstanceDAO::deserialize(oscpkt::Message *message)
 	}
 }
 
-oscpkt::Message::ArgReader &FLOModuleInstanceDAO::deserializeParameter(oscpkt::Message::ArgReader &reader, FLOParameter *parameter)
-{
-	QString parameterName;
-	int type;
-	FLOParameter::FLO_PARAMETER_TYPE pType;
-	bool editable;
-	std::vector<char> bValue;
-	QString sValue;
-	parameter = new FLOParameter();
-	reader = reader.popStr(parameterName).popInt32(type).popBool(editable);
-	pType = FLOParameter::FLO_PARAMETER_TYPE(type);
-	if( pType == FLOParameter::BYTES )
-	{
-		reader = reader.popBlob(bValue);
-		QByteArray b(bValue.data());
-		parameter->setValue(QVariant(b));
-	}
-	else
-	{
-		reader = reader.popStr(sValue);
-		switch( pType )
-		{
-			case FLOParameter::BYTES:
-				break;
-			case FLOParameter::BOOLEAN:
-				parameter->setValue(QVariant(sValue).convert(QVariant::Bool));
-				break;
-			case FLOParameter::STRING:
-				parameter->setValue(QVariant(sValue));
-				break;
-			case FLOParameter::INTEGER:
-				parameter->setValue(QVariant(sValue).convert(QVariant::Int));
-				break;
-			case FLOParameter::LONG:
-				parameter->setValue(QVariant(sValue).convert(QVariant::LongLong));
-				break;
-		}
-	}
-	return reader;
-}
 
 void FLOModuleInstanceDAO::serialize( QXmlStreamWriter *xmlWriter )
 {
@@ -139,24 +83,7 @@ void FLOModuleInstanceDAO::serialize( QXmlStreamWriter *xmlWriter )
 	xmlWriter->writeStartElement("ModuleParameters");
 	xmlWriter->writeAttribute("count", QString::number(moduleParameters.size()));
 	for( auto parameter : moduleParameters )
-		serializeParameter(xmlWriter, parameter);
-	xmlWriter->writeEndElement();
-	xmlWriter->writeEndElement();
-}
-
-void FLOModuleInstanceDAO::serializeParameter(QXmlStreamWriter *xmlWriter, FLOParameter *parameter)
-{
-	if(!parameter)
-		parameter = new FLOParameter();
-	xmlWriter->writeStartElement("FLOParameter");
-	xmlWriter->writeAttribute("parameterName", parameter->parameterName());
-	xmlWriter->writeAttribute("parameterType", QString::number(parameter->parameterType()));
-	xmlWriter->writeAttribute("editable", QString::number(parameter->editable()));
-	xmlWriter->writeStartElement("Value");
-	if( parameter->parameterType() == FLOParameter::BYTES)
-		xmlWriter->writeCDATA(parameter->value().toString());
-	else
-		xmlWriter->writeCharacters(parameter->value().toString());
+		parameter->serialize(xmlWriter);
 	xmlWriter->writeEndElement();
 	xmlWriter->writeEndElement();
 }
@@ -231,7 +158,11 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 					setPosition(p);
 				}
 				if( s == "FLOParameter" )
-					deserializeParameter(xmlReader);
+				{
+					FLOParameter *p = new FLOParameter();
+					p->deserialize(xmlReader);
+					this->moduleParameters[p->parameterName()] = p;
+				}
 				break;
 			case QXmlStreamReader::TokenType::Characters:
 				{
@@ -252,76 +183,6 @@ void FLOModuleInstanceDAO::deserialize(QXmlStreamReader *xmlReader)
 	}
 }
 
-void FLOModuleInstanceDAO::deserializeParameter(QXmlStreamReader *xmlReader)
-{
-	QXmlStreamReader::TokenType t = xmlReader->tokenType();
-	QStringRef s = xmlReader->name();
-	QString text;
-	FLOParameter *p = new FLOParameter();
-	while(!xmlReader->atEnd())
-	{
-		switch( t )
-		{
-			case QXmlStreamReader::TokenType::StartElement:
-				if( s == "FLOParameter" )
-				{
-					QXmlStreamAttributes attributes = xmlReader->attributes();
-					for( auto attribute : attributes )
-					{
-						QStringRef name = attribute.name();
-						qDebug() << "\tAttribute Name: " << name;
-						if( name == "parameterName")
-							p->setParameterName(attribute.value().toString());
-						if( name == "parameterType")
-							p->setParameterType(FLOParameter::FLO_PARAMETER_TYPE(attribute.value().toInt()));
-						if( name == "editable")
-							p->setEditable(attribute.value().toInt());
-					}
-				}
-				if( s == "Value" )
-				{
-
-				}
-				break;
-			case QXmlStreamReader::TokenType::Characters:
-				{
-					text += xmlReader->text().toString();
-					break;
-				}
-			case QXmlStreamReader::TokenType::EndElement:
-				s = xmlReader->name();
-				if( s == "Value")
-				{
-					switch(p->parameterType())
-					{
-						case FLOParameter::BYTES:
-							break;
-						case FLOParameter::BOOLEAN:
-							p->setValue(QVariant(text.toInt()).convert(QVariant::Bool));
-							break;
-						case FLOParameter::STRING:
-							p->setValue(QVariant(text));
-							break;
-						case FLOParameter::INTEGER:
-							p->setValue(QVariant(text.toInt()));
-							break;
-						case FLOParameter::LONG:
-							p->setValue(QVariant(text.toLongLong()));
-							break;
-					}
-				}
-				if( s == "FLOParameter")
-				{
-					moduleParameters[p->parameterName()] = p;
-					return;
-				}
-				break;
-			default:
-				break;
-		}
-		t = xmlReader->readNext();
-	}
-}
 
 /*
  *  getter
@@ -375,6 +236,16 @@ QString FLOModuleInstanceDAO::group() const
 FLOParameter *FLOModuleInstanceDAO::getParameter(QString parameterName)
 {
 	return moduleParameters[parameterName];
+}
+
+FLOParameter *FLOModuleInstanceDAO::getParameterAt(int position)
+{
+	return (moduleParameters.begin()+position).value();
+}
+
+int FLOModuleInstanceDAO::getParameterCount()
+{
+	return moduleParameters.size();
 }
 
 /*
