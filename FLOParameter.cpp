@@ -19,16 +19,12 @@ void FLOParameter::serialize(oscpkt::Message *message)
 
 void FLOParameter::deserialize(oscpkt::Message::ArgReader &reader)
 {
-	QString parameterName;
 	int type;
-	FLOParameter::FLO_PARAMETER_TYPE pType;
-	bool editable;
 	std::vector<char> bValue;
 	QString sValue;
-	reader.popStr(parameterName).popInt32(type).popBool(editable);
-	setParameterName(parameterName);
-	pType = FLOParameter::FLO_PARAMETER_TYPE(type);
-	if( pType == FLOParameter::BYTES )
+	reader.popStr(m_sParameterName).popInt32(type).popBool(m_bEditable);
+	setParameterType( FLOParameter::FLO_PARAMETER_TYPE(type) );
+	if( m_parameterType == FLOParameter::BYTES )
 	{
 		reader.popBlob(bValue);
 		QByteArray b(bValue.data());
@@ -37,7 +33,7 @@ void FLOParameter::deserialize(oscpkt::Message::ArgReader &reader)
 	else
 	{
 		reader.popStr(sValue);
-		switch( pType )
+		switch( m_parameterType )
 		{
 			case FLOParameter::BYTES:
 				break;
@@ -95,7 +91,7 @@ void FLOParameter::deserialize(QXmlStreamReader *xmlReader)
 						if( name == "parameterType")
 							setParameterType(FLOParameter::FLO_PARAMETER_TYPE(attribute.value().toInt()));
 						if( name == "editable")
-							setEditable(attribute.value().toInt());
+							setEditable(attribute.value().toInt()==1);
 					}
 				}
 				if( s == "Value" )
