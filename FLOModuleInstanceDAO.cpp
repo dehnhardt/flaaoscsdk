@@ -235,11 +235,18 @@ QString FLOModuleInstanceDAO::group() const
 
 FLOParameter *FLOModuleInstanceDAO::getParameter(QString parameterName)
 {
-	return moduleParameters[parameterName];
+	FLOParameter *p = 0;
+	if( moduleParameters.size() > 0)
+		p = moduleParameters[parameterName];
+	if( !p )
+		p = new FLOParameter();
+	return p;
 }
 
 FLOParameter *FLOModuleInstanceDAO::getParameterAt(int position)
 {
+	if( position > moduleParameters.size() )
+		return new FLOParameter();
 	return (moduleParameters.begin()+position).value();
 }
 
